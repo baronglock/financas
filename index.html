@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caderno de Finanças - Controle Pessoal</title>
+
+    <!-- Tailwind CSS para utilities básicas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS Vintage -->
+    <link rel="stylesheet" href="css/vintage-styles.css">
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="vintage-card p-8 text-center">
+            <div class="vintage-loader mb-4 mx-auto"></div>
+            <p id="loading-text" class="font-bold">Processando...</p>
+        </div>
+    </div>
+
+    <!-- Container principal estilo caderno -->
+    <div class="notebook-page">
+        <div class="container mx-auto px-8 py-6 max-w-6xl">
+
+            <!-- Header -->
+            <header class="mb-8 pb-6 border-b-2 border-dashed border-coffee">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-4xl font-bold mb-2">Caderno de Finanças</h1>
+                        <p class="text-lg italic">Controle pessoal & planejamento doméstico</p>
+                        <p id="user-info" class="text-sm mt-2 font-mono"></p>
+                    </div>
+                    <button id="logout-btn" class="hidden vintage-btn vintage-btn-danger">
+                        Encerrar Sessão
+                    </button>
+                </div>
+            </header>
+
+            <!-- Modal de Login/Cadastro -->
+            <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div class="vintage-modal p-8 w-full max-w-md">
+                    <h2 class="text-2xl font-bold mb-6 text-center">Caderno de Finanças Pessoais</h2>
+
+                    <!-- Tabs estilo fichário -->
+                    <div class="flex mb-6">
+                        <button id="login-tab" class="vintage-tab active">
+                            Acessar
+                        </button>
+                        <button id="register-tab" class="vintage-tab">
+                            Novo Cadastro
+                        </button>
+                    </div>
+
+                    <div class="vintage-card p-6">
+                        <!-- Login Form -->
+                        <form id="login-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Endereço Eletrônico</label>
+                                <input
+                                    type="email"
+                                    id="login-email"
+                                    class="vintage-input w-full"
+                                    placeholder="seu.nome@correio.com"
+                                    required
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Senha de Acesso</label>
+                                <input
+                                    type="password"
+                                    id="login-password"
+                                    class="vintage-input w-full"
+                                    placeholder="••••••••"
+                                    required
+                                >
+                            </div>
+                            <button type="submit" class="vintage-btn w-full mt-6">
+                                Acessar Caderno
+                            </button>
+                        </form>
+
+                        <!-- Register Form -->
+                        <form id="register-form" class="hidden space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Nome Completo</label>
+                                <input
+                                    type="text"
+                                    id="register-name"
+                                    class="vintage-input w-full"
+                                    placeholder="João da Silva"
+                                    required
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Endereço Eletrônico</label>
+                                <input
+                                    type="email"
+                                    id="register-email"
+                                    class="vintage-input w-full"
+                                    placeholder="seu.nome@correio.com"
+                                    required
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Criar Senha (mín. 6 caracteres)</label>
+                                <input
+                                    type="password"
+                                    id="register-password"
+                                    class="vintage-input w-full"
+                                    placeholder="••••••••"
+                                    required
+                                >
+                            </div>
+                            <button type="submit" class="vintage-btn vintage-btn-secondary w-full mt-6">
+                                Criar Novo Caderno
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="auth-error" class="hidden mt-4 p-3 bg-rust text-cream rounded text-sm text-center"></div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div id="main-content" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    <!-- Coluna Principal -->
+                    <div class="lg:col-span-2 space-y-6">
+
+                        <!-- Cards de Resumo -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="vintage-card p-4 text-center">
+                                <h3 class="text-sm font-bold mb-2">SALDO ATUAL</h3>
+                                <div class="stamp">
+                                    <span id="current-balance">R$ 0,00</span>
+                                </div>
+                            </div>
+                            <div class="vintage-card p-4 text-center">
+                                <h3 class="text-sm font-bold mb-2">ENTRADAS DO MÊS</h3>
+                                <div class="stamp income">
+                                    <span id="monthly-income">R$ 0,00</span>
+                                </div>
+                            </div>
+                            <div class="vintage-card p-4 text-center">
+                                <h3 class="text-sm font-bold mb-2">SAÍDAS DO MÊS</h3>
+                                <div class="stamp expense">
+                                    <span id="monthly-expenses">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Projeção -->
+                        <div class="vintage-card p-6">
+                            <h2 class="text-xl font-bold mb-4">Projeção Futura</h2>
+                            <div class="flex flex-col sm:flex-row items-end gap-4">
+                                <div class="flex-1">
+                                    <label class="block text-sm font-bold mb-1">Calcular até:</label>
+                                    <input
+                                        type="date"
+                                        id="projection-date"
+                                        class="vintage-input w-full"
+                                    >
+                                </div>
+                                <div id="projection-result" class="flex-1 text-center">
+                                    <p class="text-sm italic">Selecione uma data</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formulário de Nova Transação -->
+                        <div class="vintage-card p-6">
+                            <h2 class="text-xl font-bold mb-4">Registrar Movimento</h2>
+                            <form id="transaction-form" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold mb-1">Descrição</label>
+                                    <input
+                                        type="text"
+                                        id="description"
+                                        class="vintage-input w-full"
+                                        placeholder="Ex: Salário, Mercado, Aluguel"
+                                        required
+                                    >
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-bold mb-1">Valor</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            id="amount"
+                                            class="vintage-input w-full"
+                                            placeholder="0,00"
+                                            required
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold mb-1">Data</label>
+                                        <input
+                                            type="date"
+                                            id="date"
+                                            class="vintage-input w-full"
+                                            required
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold mb-1">Tipo</label>
+                                        <select id="type" class="vintage-select w-full">
+                                            <option value="income">Entrada (+)</option>
+                                            <option value="expense">Saída (-)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="vintage-btn w-full">
+                                    Registrar
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Lista de Transações -->
+                        <div class="vintage-card p-6">
+                            <h2 class="text-xl font-bold mb-4">Livro de Registros</h2>
+                            <div id="transaction-list" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                                <p class="text-center italic">Nenhum registro encontrado</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna do Assistente -->
+                    <div class="vintage-card p-6 flex flex-col h-[80vh]">
+                        <h2 class="text-lg font-bold mb-4">Telegrama Financeiro</h2>
+                        <div class="text-xs text-center mb-4 italic">Assistente Gemini</div>
+                        <div id="chat-box" class="flex-grow overflow-y-auto mb-4"></div>
+                        <div id="ai-loading" class="hidden text-center mb-4">
+                            <div class="vintage-loader mx-auto mb-2"></div>
+                            <p class="text-sm italic">Processando mensagem...</p>
+                        </div>
+                        <form id="ai-form" class="flex gap-2">
+                            <input
+                                type="text"
+                                id="ai-prompt"
+                                class="vintage-input flex-grow"
+                                placeholder="Digite sua mensagem..."
+                                required
+                            >
+                            <button type="submit" class="vintage-btn">
+                                Enviar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div id="delete-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="vintage-modal p-8 w-full max-w-md text-center">
+            <h2 class="text-xl font-bold mb-4">Confirmar Exclusão</h2>
+            <p class="mb-6">Deseja realmente remover este registro?</p>
+            <p class="text-sm italic mb-6">Esta ação não pode ser desfeita.</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-delete-btn" class="vintage-btn vintage-btn-secondary">
+                    Cancelar
+                </button>
+                <button id="confirm-delete-btn" class="vintage-btn vintage-btn-danger">
+                    Confirmar Exclusão
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="vintage-modal p-8 w-full max-w-lg">
+            <h2 class="text-xl font-bold mb-4">Editar Registro</h2>
+            <form id="edit-transaction-form" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <div>
+                    <label class="block text-sm font-bold mb-1">Descrição</label>
+                    <input
+                        type="text"
+                        id="edit-description"
+                        class="vintage-input w-full"
+                        required
+                    >
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">Valor</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            id="edit-amount"
+                            class="vintage-input w-full"
+                            required
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">Data</label>
+                        <input
+                            type="date"
+                            id="edit-date"
+                            class="vintage-input w-full"
+                            required
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">Tipo</label>
+                        <select id="edit-type" class="vintage-select w-full">
+                            <option value="income">Entrada (+)</option>
+                            <option value="expense">Saída (-)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-4">
+                    <button type="button" id="cancel-edit-btn" class="vintage-btn vintage-btn-secondary">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="vintage-btn">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript principal -->
+    <script type="module" src="js/app-vintage-fixed.js"></script>
+
+    <!-- Script de emergência para tabs (remover quando funcionar no módulo principal) -->
+    <script>
+        // Backup inline para garantir que as tabs funcionem
+        window.addEventListener('load', function() {
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const authError = document.getElementById('auth-error');
+
+            if (loginTab && registerTab && loginForm && registerForm) {
+                loginTab.onclick = function(e) {
+                    e.preventDefault();
+                    loginTab.classList.add('active');
+                    registerTab.classList.remove('active');
+                    loginForm.classList.remove('hidden');
+                    registerForm.classList.add('hidden');
+                    authError.classList.add('hidden');
+                    console.log('Login tab clicked');
+                };
+
+                registerTab.onclick = function(e) {
+                    e.preventDefault();
+                    registerTab.classList.add('active');
+                    loginTab.classList.remove('active');
+                    registerForm.classList.remove('hidden');
+                    loginForm.classList.add('hidden');
+                    authError.classList.add('hidden');
+                    console.log('Register tab clicked');
+                };
+
+                console.log('Inline tab handlers attached');
+            } else {
+                console.error('Tab elements not found in inline script');
+            }
+        });
+    </script>
+</body>
+</html>

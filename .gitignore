@@ -1,0 +1,13 @@
+# Arquivos de teste
+index-test.html
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

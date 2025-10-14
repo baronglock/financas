@@ -1,0 +1,355 @@
+/* Paleta de cores vintage */
+:root {
+    --cream: #FFF8E7;
+    --paper: #FAF0E6;
+    --coffee: #8B4513;
+    --olive: #556B2F;
+    --rust: #CD5C5C;
+    --navy: #191970;
+    --gold: #DAA520;
+    --charcoal: #2F4F4F;
+    --mint: #98D8C8;
+    --salmon: #FA8072;
+}
+
+/* Font import - Courier para aquele visual de máquina de escrever */
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&family=Playfair+Display:wght@400;700&display=swap');
+
+body {
+    font-family: 'Courier Prime', monospace;
+    background-color: var(--paper);
+    color: var(--charcoal);
+    background-image:
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 28px,
+            rgba(139, 69, 19, 0.1) 28px,
+            rgba(139, 69, 19, 0.1) 29px
+        );
+    min-height: 100vh;
+}
+
+/* Títulos com fonte vintage */
+h1, h2, h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--coffee);
+    letter-spacing: 0.05em;
+}
+
+/* Container principal como um caderno */
+.notebook-page {
+    background-color: var(--cream);
+    box-shadow:
+        0 0 20px rgba(0,0,0,0.1),
+        inset -40px 0 40px -40px rgba(139, 69, 19, 0.2);
+    border-left: 2px solid var(--rust);
+    margin-left: 60px;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* Furos do caderno */
+.notebook-page::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 50px;
+    bottom: 50px;
+    width: 20px;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 30px,
+        var(--charcoal) 30px,
+        var(--charcoal) 32px,
+        transparent 32px,
+        transparent 40px,
+        var(--paper) 40px,
+        var(--paper) 50px
+    );
+}
+
+/* Cards estilo notas vintage */
+.vintage-card {
+    background-color: var(--cream);
+    border: 1px solid var(--coffee);
+    box-shadow:
+        3px 3px 0 var(--coffee),
+        3px 3px 10px rgba(0,0,0,0.1);
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.vintage-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow:
+        5px 5px 0 var(--coffee),
+        5px 5px 15px rgba(0,0,0,0.15);
+}
+
+/* Input estilo máquina de escrever */
+.vintage-input {
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px dashed var(--coffee);
+    font-family: 'Courier Prime', monospace;
+    color: var(--charcoal);
+    padding: 8px 0;
+    transition: border-color 0.3s ease;
+}
+
+.vintage-input:focus {
+    outline: none;
+    border-bottom: 2px solid var(--coffee);
+}
+
+/* Select customizado */
+.vintage-select {
+    background-color: var(--cream);
+    border: 1px solid var(--coffee);
+    font-family: 'Courier Prime', monospace;
+    color: var(--charcoal);
+    padding: 8px;
+    cursor: pointer;
+}
+
+/* Botões vintage */
+.vintage-btn {
+    background-color: var(--coffee);
+    color: var(--cream);
+    border: 2px solid var(--coffee);
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: 3px 3px 0 var(--charcoal);
+}
+
+.vintage-btn:hover {
+    background-color: var(--cream);
+    color: var(--coffee);
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--charcoal);
+}
+
+.vintage-btn-secondary {
+    background-color: var(--olive);
+    border-color: var(--olive);
+    box-shadow: 3px 3px 0 var(--charcoal);
+}
+
+.vintage-btn-secondary:hover {
+    background-color: var(--cream);
+    color: var(--olive);
+}
+
+.vintage-btn-danger {
+    background-color: var(--rust);
+    border-color: var(--rust);
+    box-shadow: 3px 3px 0 var(--charcoal);
+}
+
+.vintage-btn-danger:hover {
+    background-color: var(--cream);
+    color: var(--rust);
+}
+
+/* Transações estilo lista de compras */
+.transaction-item {
+    border-bottom: 1px dashed var(--coffee);
+    padding: 12px 0;
+    position: relative;
+}
+
+.transaction-item::before {
+    content: '□';
+    position: absolute;
+    left: -25px;
+    color: var(--coffee);
+    font-size: 20px;
+}
+
+.transaction-item.income::before {
+    content: '☑';
+    color: var(--olive);
+}
+
+/* Tags de valor */
+.price-tag {
+    display: inline-block;
+    background-color: var(--cream);
+    border: 2px solid var(--coffee);
+    padding: 4px 12px;
+    transform: rotate(-2deg);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+    font-weight: 700;
+}
+
+.price-tag.income {
+    border-color: var(--olive);
+    color: var(--olive);
+}
+
+.price-tag.expense {
+    border-color: var(--rust);
+    color: var(--rust);
+}
+
+/* Chat estilo telegrama */
+.telegram-message {
+    background-color: var(--paper);
+    border: 1px solid var(--coffee);
+    padding: 12px;
+    margin: 8px 0;
+    position: relative;
+    font-family: 'Special Elite', cursive;
+}
+
+.telegram-message::before {
+    content: 'TELEGRAM';
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    background-color: var(--cream);
+    padding: 0 8px;
+    font-size: 10px;
+    color: var(--coffee);
+    letter-spacing: 0.1em;
+}
+
+/* Loader vintage */
+.vintage-loader {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--coffee);
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Modal com visual de carta */
+.vintage-modal {
+    background-color: var(--cream);
+    border: 2px solid var(--coffee);
+    box-shadow:
+        5px 5px 0 var(--coffee),
+        5px 5px 20px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.vintage-modal::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    border: 1px solid var(--coffee);
+    pointer-events: none;
+}
+
+/* Tabs vintage */
+.vintage-tab {
+    background-color: var(--paper);
+    border: 1px solid var(--coffee);
+    border-bottom: none;
+    padding: 10px 20px;
+    margin-right: 5px;
+    position: relative;
+    top: 1px;
+    cursor: pointer !important;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.vintage-tab.active {
+    background-color: var(--cream);
+    color: var(--coffee);
+    z-index: 10;
+    border-bottom: 1px solid var(--cream);
+}
+
+.vintage-tab:hover:not(.active) {
+    background-color: rgba(139, 69, 19, 0.1);
+}
+
+.vintage-tab:active {
+    transform: scale(0.98);
+}
+
+/* Selo/Stamp para valores */
+.stamp {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: var(--cream);
+    border: 3px double var(--coffee);
+    border-radius: 4px;
+    transform: rotate(-5deg);
+    font-weight: 700;
+    text-align: center;
+}
+
+.stamp.income {
+    border-color: var(--olive);
+    color: var(--olive);
+}
+
+.stamp.expense {
+    border-color: var(--rust);
+    color: var(--rust);
+}
+
+/* Animações suaves */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Data headers estilo carimbo */
+.date-stamp {
+    display: inline-block;
+    padding: 4px 16px;
+    border: 2px solid var(--coffee);
+    border-radius: 20px;
+    background-color: var(--paper);
+    font-family: 'Special Elite', cursive;
+    font-size: 14px;
+    color: var(--coffee);
+    margin: 16px 0 8px;
+    transform: rotate(-1deg);
+}
+
+/* Scrollbar vintage */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--paper);
+    border-left: 1px solid var(--coffee);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--coffee);
+    border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--charcoal);
+}
