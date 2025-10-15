@@ -821,17 +821,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const systemInstruction = {
             parts: [{
-                text: "Você é um consultor financeiro tradicional. Use linguagem formal mas acessível. Seja direto, prático e CONCISO. Suas respostas devem ter no máximo 200 palavras. Evite repetições e vá direto ao ponto. Responda em português brasileiro."
+                text: "Você é um consultor financeiro tradicional. Use linguagem formal mas acessível. Seja direto, prático e CONCISO. Suas respostas devem ter no máximo 200 palavras. Evite repetições e vá direto ao ponto. Responda em português brasileiro. Mantenha o contexto da conversa e se refira a mensagens anteriores quando relevante."
             }]
         };
 
+        // Construir histórico de conversa completo
+        const contents = [];
+
+        // Adicionar mensagens anteriores do histórico (últimas 10 mensagens para não exceder limite)
+        const recentHistory = chatHistory.slice(-10);
+        recentHistory.forEach(msg => {
+            if (msg.role === 'user') {
+                contents.push({
+                    role: "user",
+                    parts: [{ text: msg.content }]
+                });
+            } else if (msg.role === 'model') {
+                contents.push({
+                    role: "model",
+                    parts: [{ text: msg.content }]
+                });
+            }
+        });
+
+        // Adicionar a nova mensagem do usuário com contexto financeiro
+        contents.push({
+            role: "user",
+            parts: [{
+                text: `${dataSummary}\n\nCONSULTA: ${userPrompt}\n\nRESPONDA DE FORMA BREVE E DIRETA (máximo 200 palavras).`
+            }]
+        });
+
         const payload = {
-            contents: [{
-                role: "user",
-                parts: [{
-                    text: `${dataSummary}\n\nCONSULTA: ${userPrompt}\n\nRESPONDA DE FORMA BREVE E DIRETA (máximo 200 palavras).`
-                }]
-            }],
+            contents: contents,
             systemInstruction: systemInstruction,
             generationConfig: {
                 maxOutputTokens: 300,
