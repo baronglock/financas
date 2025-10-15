@@ -350,10 +350,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Ordenar por data: cronológico (mais antigo primeiro)
         const sortedTransactions = [...transactions].sort((a, b) => {
             const dateA = new Date(a.date + 'T03:00:00Z');
             const dateB = new Date(b.date + 'T03:00:00Z');
-            return dateB - dateA;
+            return dateA - dateB;
         });
 
         let lastDate = null;
@@ -462,7 +463,166 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listeners para projeção
     if (projectionDateInput) {
-        projectionDateInput.addEventListener('change', updateProjection);
+        projectionDateInput.addEventListener('change', () => {
+            updateProjection();
+            // Mostrar botão de gráfico quando há uma data selecionada
+            const showChartBtn = document.getElementById('show-chart-btn');
+            if (showChartBtn && projectionDateInput.value) {
+                showChartBtn.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Gráfico de projeção
+    let balanceChart = null;
+    const showChartBtn = document.getElementById('show-chart-btn');
+    const chartContainer = document.getElementById('chart-container');
+    const balanceChartCanvas = document.getElementById('balance-chart');
+
+    if (showChartBtn) {
+        showChartBtn.addEventListener('click', () => {
+            if (chartContainer.classList.contains('hidden')) {
+                chartContainer.classList.remove('hidden');
+                showChartBtn.textContent = 'Ocultar Gráfico';
+                renderBalanceChart();
+            } else {
+                chartContainer.classList.add('hidden');
+                showChartBtn.textContent = 'Ver Gráfico';
+            }
+        });
+    }
+
+    function renderBalanceChart() {
+        if (!projectionDateInput.value || !balanceChartCanvas) return;
+
+        const futureDate = new Date(projectionDateInput.value + 'T03:00:00Z');
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        // Criar array de datas do hoje até a data futura
+        const dates = [];
+        const balances = [];
+
+        // Ordenar transações por data
+        const sortedTx = [...transactions].sort((a, b) => {
+            return new Date(a.date) - new Date(b.date);
+        });
+
+        // Calcular saldo acumulado para cada data
+        let currentDate = new Date(today);
+        let runningBalance = 0;
+
+        // Primeiro, calcular saldo inicial (até hoje)
+        sortedTx.forEach(tx => {
+            const txDate = new Date(tx.date + 'T03:00:00Z');
+            if (txDate <= today) {
+                const amount = parseFloat(tx.amount);
+                runningBalance += tx.type === 'income' ? amount : -amount;
+            }
+        });
+
+        // Adicionar ponto inicial (hoje)
+        dates.push(today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+        balances.push(runningBalance);
+
+        // Calcular projeção dia a dia
+        currentDate.setDate(currentDate.getDate() + 1);
+
+        while (currentDate <= futureDate) {
+            // Verificar se há transações neste dia
+            sortedTx.forEach(tx => {
+                const txDate = new Date(tx.date + 'T03:00:00Z');
+                if (txDate.toDateString() === currentDate.toDateString()) {
+                    const amount = parseFloat(tx.amount);
+                    runningBalance += tx.type === 'income' ? amount : -amount;
+                }
+            });
+
+            dates.push(currentDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            balances.push(runningBalance);
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // Destruir gráfico anterior se existir
+        if (balanceChart) {
+            balanceChart.destroy();
+        }
+
+        // Criar novo gráfico
+        const ctx = balanceChartCanvas.getContext('2d');
+        balanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Saldo Projetado (R$)',
+                    data: balances,
+                    borderColor: '#8B4513',
+                    backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                    fill: true,
+                    tension: 0.2,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#8B4513',
+                    pointRadius: 3,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: {
+                                family: "'Courier Prime', monospace",
+                                size: 12
+                            },
+                            color: '#2F4F4F'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'R$ ' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toFixed(0);
+                            },
+                            font: {
+                                family: "'Courier Prime', monospace"
+                            },
+                            color: '#2F4F4F'
+                        },
+                        grid: {
+                            color: 'rgba(139, 69, 19, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                family: "'Courier Prime', monospace",
+                                size: 10
+                            },
+                            color: '#2F4F4F'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
     }
 
     // Adicionar transação
@@ -599,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const systemInstruction = {
             parts: [{
-                text: "Você é um consultor financeiro tradicional. Use linguagem formal mas acessível. Seja direto e prático. Responda em português brasileiro."
+                text: "Você é um consultor financeiro tradicional. Use linguagem formal mas acessível. Seja direto, prático e CONCISO. Suas respostas devem ter no máximo 200 palavras. Evite repetições e vá direto ao ponto. Responda em português brasileiro."
             }]
         };
 
@@ -607,10 +767,14 @@ document.addEventListener('DOMContentLoaded', () => {
             contents: [{
                 role: "user",
                 parts: [{
-                    text: `${dataSummary}\n\nCONSULTA: ${userPrompt}`
+                    text: `${dataSummary}\n\nCONSULTA: ${userPrompt}\n\nRESPONDA DE FORMA BREVE E DIRETA (máximo 200 palavras).`
                 }]
             }],
-            systemInstruction: systemInstruction
+            systemInstruction: systemInstruction,
+            generationConfig: {
+                maxOutputTokens: 300,
+                temperature: 0.7
+            }
         };
 
         try {

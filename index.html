@@ -13,6 +13,9 @@
 
     <!-- Custom CSS Vintage -->
     <link rel="stylesheet" href="css/vintage-styles.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -117,6 +120,17 @@
                                     required
                                 >
                             </div>
+                            <div class="flex items-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="terms-checkbox"
+                                    class="mt-1"
+                                    required
+                                >
+                                <label for="terms-checkbox" class="text-xs">
+                                    Aceito os termos de uso e concordo em utilizar este caderno para controle pessoal de finanças. Entendo que meus dados são privados e protegidos pelo Firebase.
+                                </label>
+                            </div>
                             <button type="submit" class="vintage-btn vintage-btn-secondary w-full mt-6">
                                 Criar Novo Caderno
                             </button>
@@ -171,6 +185,12 @@
                                 <div id="projection-result" class="flex-1 text-center">
                                     <p class="text-sm italic">Selecione uma data</p>
                                 </div>
+                                <button id="show-chart-btn" class="vintage-btn vintage-btn-secondary hidden">
+                                    Ver Gráfico
+                                </button>
+                            </div>
+                            <div id="chart-container" class="hidden mt-6">
+                                <canvas id="balance-chart" class="w-full" style="max-height: 300px;"></canvas>
                             </div>
                         </div>
 
@@ -234,8 +254,8 @@
 
                     <!-- Coluna do Assistente -->
                     <div class="vintage-card p-6 flex flex-col h-[80vh]">
-                        <h2 class="text-lg font-bold mb-4">Telegrama Financeiro</h2>
-                        <div class="text-xs text-center mb-4 italic">Assistente Gemini</div>
+                        <h2 class="text-lg font-bold mb-4">Assistente IA</h2>
+                        <div class="text-xs text-center mb-4 italic">Consultor Financeiro Inteligente</div>
                         <div id="chat-box" class="flex-grow overflow-y-auto mb-4"></div>
                         <div id="ai-loading" class="hidden text-center mb-4">
                             <div class="vintage-loader mx-auto mb-2"></div>
