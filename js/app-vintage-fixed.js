@@ -813,28 +813,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const income = parseFloat(monthlyIncomeEl.textContent.replace('R$ ', ''));
         const expenses = parseFloat(monthlyExpensesEl.textContent.replace('R$ ', ''));
 
-        const dataSummary = `
-            DADOS FINANCEIROS - ${userName.toUpperCase()}
-            DATA: ${new Date().toLocaleDateString('pt-BR')}
-            =====================================
-            SALDO ATUAL: R$ ${balance.toFixed(2)}
-            ENTRADAS MENSAIS: R$ ${income.toFixed(2)}
-            SAÍDAS MENSAIS: R$ ${expenses.toFixed(2)}
-            FLUXO MENSAL: R$ ${(income - expenses).toFixed(2)}
-            =====================================
-        `;
+        const dataSummary = `[DADOS FINANCEIROS]
+Saldo atual: R$ ${balance.toFixed(2)}
+Entradas do mês: R$ ${income.toFixed(2)}
+Saídas do mês: R$ ${expenses.toFixed(2)}
+Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
 
         const systemInstruction = {
             parts: [{
-                text: "Você é um consultor financeiro tradicional. Use linguagem formal mas acessível. Seja direto, prático e CONCISO. Suas respostas devem ter no máximo 200 palavras. Evite repetições e vá direto ao ponto. Responda em português brasileiro. Mantenha o contexto da conversa e se refira a mensagens anteriores quando relevante."
+                text: `Você é um assistente financeiro prático e direto. REGRAS IMPORTANTES:
+- Você pode usar o nome do usuário ocasionalmente (1 em cada 4-5 mensagens), mas não force em todas as respostas
+- Seja ultra-conciso: máximo 3-4 frases curtas
+- Use linguagem casual, simples e objetiva
+- Não repita informações já mencionadas na conversa
+- Quando algo já foi discutido, apenas complemente ou ajuste, não recalcule tudo
+- Vá direto ao ponto sem explicações longas
+- Use quebras de linha para organizar quando necessário`
             }]
         };
 
         // Construir histórico de conversa completo
         const contents = [];
 
-        // Adicionar mensagens anteriores do histórico (últimas 10 mensagens para não exceder limite)
-        const recentHistory = chatHistory.slice(-10);
+        // Adicionar mensagens anteriores do histórico (últimas 8 mensagens)
+        const recentHistory = chatHistory.slice(-8);
+
+        // Contador de mensagens desde o último envio de dados
+        let messagesSinceData = 0;
+        for (let i = recentHistory.length - 1; i >= 0; i--) {
+            if (recentHistory[i].role === 'user' && recentHistory[i].content.includes('[DADOS FINANCEIROS]')) {
+                break;
+            }
+            messagesSinceData++;
+        }
+
         recentHistory.forEach(msg => {
             if (msg.role === 'user') {
                 contents.push({
@@ -849,20 +861,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Adicionar a nova mensagem do usuário com contexto financeiro
-        contents.push({
-            role: "user",
-            parts: [{
-                text: `${dataSummary}\n\nCONSULTA: ${userPrompt}\n\nRESPONDA DE FORMA BREVE E DIRETA (máximo 200 palavras).`
-            }]
-        });
+        // Enviar dados financeiros apenas:
+        // 1. Se é a primeira mensagem (histórico vazio)
+        // 2. Se passaram 5+ mensagens desde último envio
+        // 3. Se a pergunta menciona "saldo", "quanto", "valor", "balanço"
+        const needsFinancialData =
+            chatHistory.length === 0 ||
+            messagesSinceData >= 5 ||
+            /saldo|quanto|valor|balan[çc]o|gastar|sobrar|entrad|sa[íi]d/i.test(userPrompt);
+
+        // Adicionar a nova mensagem do usuário
+        if (needsFinancialData) {
+            contents.push({
+                role: "user",
+                parts: [{ text: `${dataSummary}\n\n${userPrompt}` }]
+            });
+        } else {
+            contents.push({
+                role: "user",
+                parts: [{ text: userPrompt }]
+            });
+        }
 
         const payload = {
             contents: contents,
             systemInstruction: systemInstruction,
             generationConfig: {
-                maxOutputTokens: 300,
-                temperature: 0.7
+                maxOutputTokens: 150,
+                temperature: 0.5
             }
         };
 
