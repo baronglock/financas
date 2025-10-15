@@ -250,6 +250,34 @@
                                 <p class="text-center italic">Nenhum registro encontrado</p>
                             </div>
                         </div>
+
+                        <!-- Estatísticas por Categoria -->
+                        <div class="vintage-card p-6">
+                            <h2 class="text-xl font-bold mb-4">Estatísticas por Categoria</h2>
+
+                            <!-- Filtros -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label class="block text-sm font-bold mb-1">Filtrar por Mês/Ano</label>
+                                    <input
+                                        type="month"
+                                        id="stats-month"
+                                        class="vintage-input w-full"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-1">Filtrar por Item</label>
+                                    <select id="stats-category" class="vintage-select w-full">
+                                        <option value="">Todos os itens</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Resultado das Estatísticas -->
+                            <div id="stats-result" class="space-y-3">
+                                <p class="text-center italic text-sm">Selecione um período para ver as estatísticas</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Coluna do Assistente -->

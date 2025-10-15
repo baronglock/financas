@@ -659,6 +659,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Modal de edição
+    const editModal = document.getElementById('edit-modal');
+    const editForm = document.getElementById('edit-transaction-form');
+    const editIdInput = document.getElementById('edit-id');
+    const editDescriptionInput = document.getElementById('edit-description');
+    const editAmountInput = document.getElementById('edit-amount');
+    const editDateInput = document.getElementById('edit-date');
+    const editTypeInput = document.getElementById('edit-type');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+    function openEditModal(transaction) {
+        if (!editModal || !editForm) return;
+
+        editIdInput.value = transaction.id;
+        editDescriptionInput.value = transaction.description;
+        editAmountInput.value = transaction.amount;
+        editDateInput.value = transaction.date;
+        editTypeInput.value = transaction.type;
+
+        editModal.classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        if (editModal) {
+            editModal.classList.add('hidden');
+            editForm.reset();
+        }
+    }
+
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', closeEditModal);
+    }
+
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = editIdInput.value;
+            const updatedData = {
+                description: editDescriptionInput.value,
+                amount: parseFloat(editAmountInput.value),
+                date: editDateInput.value,
+                type: editTypeInput.value
+            };
+
+            showLoading('Salvando alterações...');
+
+            try {
+                await updateDoc(doc(transactionsCollectionRef, id), updatedData);
+                console.log('Transação atualizada com sucesso');
+                closeEditModal();
+                hideLoading();
+            } catch (error) {
+                console.error('Erro ao atualizar transação:', error);
+                hideLoading();
+                alert('Erro ao salvar alterações: ' + error.message);
+            }
+        });
+    }
+
     // Delegação de eventos para editar/excluir
     if (transactionList) {
         transactionList.addEventListener('click', async (e) => {
@@ -678,8 +738,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } else if (button.classList.contains('edit-btn')) {
-                // Implementar edição se necessário
-                alert('Função de edição em desenvolvimento');
+                const transaction = transactions.find(tx => tx.id === id);
+                if (transaction) {
+                    openEditModal(transaction);
+                }
             }
         });
     }
@@ -778,15 +840,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
+            console.log('Chamando Gemini API...');
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+            console.log('Status da resposta:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Erro da API:', errorData);
+                throw new Error(`API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
+            }
 
             const result = await response.json();
+            console.log('Resposta do Gemini recebida');
             const modelResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível processar sua consulta.";
 
             await addDoc(chatHistoryCollectionRef, {
@@ -795,16 +865,182 @@ document.addEventListener('DOMContentLoaded', () => {
                 timestamp: serverTimestamp()
             });
         } catch (error) {
-            console.error('Erro Gemini:', error);
+            console.error('Erro Gemini completo:', error);
+            let errorMessage = 'Desculpe, houve uma falha no processamento.';
+
+            if (error.message.includes('API_KEY_INVALID')) {
+                errorMessage = 'Erro: Chave da API Gemini inválida. Verifique suas configurações.';
+            } else if (error.message.includes('PERMISSION_DENIED')) {
+                errorMessage = 'Erro: Permissão negada. Verifique se a API do Gemini está habilitada no Google Cloud.';
+            }
+
             await addDoc(chatHistoryCollectionRef, {
                 role: 'model',
-                content: 'Desculpe, houve uma falha no processamento.',
+                content: errorMessage,
                 timestamp: serverTimestamp()
             });
         } finally {
             if (aiLoading) aiLoading.classList.add('hidden');
         }
     }
+
+    // Estatísticas por Categoria
+    const statsMonthInput = document.getElementById('stats-month');
+    const statsCategorySelect = document.getElementById('stats-category');
+    const statsResultDiv = document.getElementById('stats-result');
+
+    function updateStatsCategoryFilter() {
+        if (!statsCategorySelect) return;
+
+        // Obter lista única de categorias (nomes de transações)
+        const categories = [...new Set(transactions.map(tx => tx.description))].sort();
+
+        // Limpar e repopular o select
+        statsCategorySelect.innerHTML = '<option value="">Todos os itens</option>';
+        categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            statsCategorySelect.appendChild(option);
+        });
+    }
+
+    function calculateStats() {
+        if (!statsResultDiv) return;
+
+        const selectedMonth = statsMonthInput.value; // formato: YYYY-MM
+        const selectedCategory = statsCategorySelect.value;
+
+        if (!selectedMonth) {
+            statsResultDiv.innerHTML = '<p class="text-center italic text-sm">Selecione um período para ver as estatísticas</p>';
+            return;
+        }
+
+        // Filtrar transações pelo mês selecionado
+        const [year, month] = selectedMonth.split('-').map(Number);
+        let filteredTransactions = transactions.filter(tx => {
+            const txDate = new Date(tx.date + 'T03:00:00Z');
+            return txDate.getUTCFullYear() === year && txDate.getUTCMonth() === (month - 1);
+        });
+
+        // Se houver categoria selecionada, filtrar também
+        if (selectedCategory) {
+            filteredTransactions = filteredTransactions.filter(tx => tx.description === selectedCategory);
+        }
+
+        if (filteredTransactions.length === 0) {
+            statsResultDiv.innerHTML = '<p class="text-center italic text-sm">Nenhuma transação encontrada para este período</p>';
+            return;
+        }
+
+        // Agrupar por descrição
+        const grouped = {};
+        filteredTransactions.forEach(tx => {
+            if (!grouped[tx.description]) {
+                grouped[tx.description] = {
+                    income: 0,
+                    expense: 0,
+                    count: 0
+                };
+            }
+            if (tx.type === 'income') {
+                grouped[tx.description].income += parseFloat(tx.amount);
+            } else {
+                grouped[tx.description].expense += parseFloat(tx.amount);
+            }
+            grouped[tx.description].count++;
+        });
+
+        // Renderizar estatísticas
+        statsResultDiv.innerHTML = '';
+
+        // Criar tabela de estatísticas
+        const categories = Object.keys(grouped).sort();
+
+        categories.forEach(category => {
+            const data = grouped[category];
+            const total = data.income - data.expense;
+            const isPositive = total >= 0;
+
+            const categoryCard = document.createElement('div');
+            categoryCard.className = 'vintage-card p-4 border-l-4 ' + (isPositive ? 'border-olive' : 'border-rust');
+            categoryCard.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold text-lg">${category}</h3>
+                    <span class="text-sm font-mono">${data.count}x</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    ${data.income > 0 ? `<div><span class="text-olive">+R$ ${data.income.toFixed(2)}</span></div>` : '<div></div>'}
+                    ${data.expense > 0 ? `<div><span class="text-rust">-R$ ${data.expense.toFixed(2)}</span></div>` : '<div></div>'}
+                </div>
+                <div class="mt-2 pt-2 border-t border-coffee border-dashed">
+                    <span class="font-bold ${isPositive ? 'text-olive' : 'text-rust'}">
+                        Total: ${isPositive ? '+' : ''}R$ ${total.toFixed(2)}
+                    </span>
+                </div>
+            `;
+            statsResultDiv.appendChild(categoryCard);
+        });
+
+        // Adicionar resumo geral
+        const totalIncome = Object.values(grouped).reduce((sum, data) => sum + data.income, 0);
+        const totalExpense = Object.values(grouped).reduce((sum, data) => sum + data.expense, 0);
+        const totalCount = Object.values(grouped).reduce((sum, data) => sum + data.count, 0);
+        const balance = totalIncome - totalExpense;
+
+        const summaryCard = document.createElement('div');
+        summaryCard.className = 'vintage-card p-4 bg-coffee text-cream mt-4';
+        summaryCard.innerHTML = `
+            <h3 class="font-bold text-center mb-3">RESUMO DO PERÍODO</h3>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                    <div class="text-xs opacity-75">Total de Lançamentos</div>
+                    <div class="font-bold text-lg">${totalCount}</div>
+                </div>
+                <div>
+                    <div class="text-xs opacity-75">Categorias</div>
+                    <div class="font-bold text-lg">${categories.length}</div>
+                </div>
+                <div>
+                    <div class="text-xs opacity-75">Entradas</div>
+                    <div class="font-bold">+R$ ${totalIncome.toFixed(2)}</div>
+                </div>
+                <div>
+                    <div class="text-xs opacity-75">Saídas</div>
+                    <div class="font-bold">-R$ ${totalExpense.toFixed(2)}</div>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-cream border-dashed text-center">
+                <div class="text-xs opacity-75">Saldo do Período</div>
+                <div class="font-bold text-xl">${balance >= 0 ? '+' : ''}R$ ${balance.toFixed(2)}</div>
+            </div>
+        `;
+        statsResultDiv.appendChild(summaryCard);
+    }
+
+    // Event listeners para estatísticas
+    if (statsMonthInput) {
+        // Definir mês atual como padrão
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        statsMonthInput.value = currentMonth;
+
+        statsMonthInput.addEventListener('change', calculateStats);
+    }
+
+    if (statsCategorySelect) {
+        statsCategorySelect.addEventListener('change', calculateStats);
+    }
+
+    // Atualizar renderUI para incluir estatísticas
+    const originalRenderUI = renderUI;
+    renderUI = function() {
+        renderTransactions();
+        updateDashboard();
+        updateProjection();
+        updateStatsCategoryFilter();
+        calculateStats();
+    };
 
     // Verificar estado inicial
     console.log('App inicializado. Aguardando autenticação...');
