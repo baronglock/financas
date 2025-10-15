@@ -407,23 +407,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentBalanceEl || !monthlyIncomeEl || !monthlyExpensesEl) return;
 
         const now = new Date();
-        const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        const currentMonth = now.getUTCMonth();
-        const currentYear = now.getUTCFullYear();
+        // Pegar a data de hoje no fuso horário local (início do dia)
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        today.setHours(23, 59, 59, 999); // Fim do dia de hoje
+
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
 
         let balance = 0;
         let monthlyIncome = 0;
         let monthlyExpenses = 0;
 
         transactions.forEach(tx => {
-            const txDate = new Date(tx.date + 'T03:00:00Z');
+            // Criar data da transação no fuso local
+            const txDate = new Date(tx.date + 'T00:00:00');
             const amount = parseFloat(tx.amount);
 
+            // Incluir transações até o final do dia de hoje
             if (txDate <= today) {
                 balance += tx.type === 'income' ? amount : -amount;
             }
 
-            if (txDate.getUTCMonth() === currentMonth && txDate.getUTCFullYear() === currentYear) {
+            if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
                 if (tx.type === 'income') {
                     monthlyIncome += amount;
                 } else {
