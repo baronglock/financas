@@ -172,18 +172,28 @@
 
                         <!-- Projeção -->
                         <div class="vintage-card p-6">
-                            <h2 class="text-xl font-bold mb-4">Projeção Futura</h2>
-                            <div class="flex flex-col sm:flex-row items-end gap-4">
-                                <div class="flex-1">
-                                    <label class="block text-sm font-bold mb-1">Calcular até:</label>
+                            <h2 class="text-xl font-bold mb-4">Projeção de Saldo</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-bold mb-1">Data Inicial:</label>
                                     <input
                                         type="date"
-                                        id="projection-date"
+                                        id="projection-start-date"
                                         class="vintage-input w-full"
                                     >
                                 </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-1">Data Final:</label>
+                                    <input
+                                        type="date"
+                                        id="projection-end-date"
+                                        class="vintage-input w-full"
+                                    >
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row items-center gap-4">
                                 <div id="projection-result" class="flex-1 text-center">
-                                    <p class="text-sm italic">Selecione uma data</p>
+                                    <p class="text-sm italic">Selecione o período</p>
                                 </div>
                                 <button id="show-chart-btn" class="vintage-btn vintage-btn-secondary hidden">
                                     Ver Gráfico

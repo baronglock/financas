@@ -326,12 +326,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentBalanceEl = document.getElementById('current-balance');
     const monthlyIncomeEl = document.getElementById('monthly-income');
     const monthlyExpensesEl = document.getElementById('monthly-expenses');
-    const projectionDateInput = document.getElementById('projection-date');
+    const projectionStartDateInput = document.getElementById('projection-start-date');
+    const projectionEndDateInput = document.getElementById('projection-end-date');
     const projectionResultEl = document.getElementById('projection-result');
 
     // Configurar data padrão
     if (dateInput) {
         dateInput.value = new Date().toISOString().split('T')[0];
+    }
+
+    // Configurar datas padrão da projeção
+    if (projectionStartDateInput && projectionEndDateInput) {
+        const today = new Date();
+        projectionStartDateInput.value = today.toISOString().split('T')[0];
+
+        const futureDate = new Date(today);
+        futureDate.setMonth(futureDate.getMonth() + 1);
+        projectionEndDateInput.value = futureDate.toISOString().split('T')[0];
     }
 
     // Funções de renderização
@@ -357,7 +368,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return dateA - dateB;
         });
 
+        const today = new Date().toISOString().split('T')[0];
+        let todayElement = null;
         let lastDate = null;
+
         sortedTransactions.forEach(tx => {
             const txDate = new Date(tx.date + 'T03:00:00Z');
 
@@ -369,6 +383,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     month: 'long',
                     year: 'numeric'
                 }).toUpperCase();
+
+                // Marcar elemento do dia atual
+                if (tx.date === today) {
+                    dateHeader.id = 'today-marker';
+                    todayElement = dateHeader;
+                }
+
                 transactionList.appendChild(dateHeader);
                 lastDate = tx.date;
             }
@@ -401,6 +422,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
             transactionList.appendChild(el);
         });
+
+        // Scroll automático para o dia atual
+        setTimeout(() => {
+            if (todayElement) {
+                todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
     }
 
     function updateDashboard() {
@@ -443,36 +471,69 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateProjection() {
-        if (!projectionDateInput || !projectionResultEl) return;
+        if (!projectionStartDateInput || !projectionEndDateInput || !projectionResultEl) return;
 
-        const futureDateStr = projectionDateInput.value;
-        if (!futureDateStr) {
-            projectionResultEl.innerHTML = `<p class="text-sm italic">Selecione uma data</p>`;
+        const startDateStr = projectionStartDateInput.value;
+        const endDateStr = projectionEndDateInput.value;
+
+        if (!startDateStr || !endDateStr) {
+            projectionResultEl.innerHTML = `<p class="text-sm italic">Selecione o período</p>`;
             return;
         }
 
-        const futureDate = new Date(futureDateStr + 'T03:00:00Z');
-        let projectedBalance = 0;
+        const startDate = new Date(startDateStr + 'T00:00:00');
+        const endDate = new Date(endDateStr + 'T23:59:59');
 
+        // Calcular saldo inicial (até a data de início)
+        let initialBalance = 0;
         transactions.forEach(tx => {
-            if (new Date(tx.date + 'T03:00:00Z') <= futureDate) {
+            const txDate = new Date(tx.date + 'T00:00:00');
+            if (txDate < startDate) {
+                initialBalance += tx.type === 'income' ? parseFloat(tx.amount) : -parseFloat(tx.amount);
+            }
+        });
+
+        // Calcular projeção até data final
+        let projectedBalance = initialBalance;
+        transactions.forEach(tx => {
+            const txDate = new Date(tx.date + 'T00:00:00');
+            if (txDate >= startDate && txDate <= endDate) {
                 projectedBalance += tx.type === 'income' ? parseFloat(tx.amount) : -parseFloat(tx.amount);
             }
         });
 
+        const periodChange = projectedBalance - initialBalance;
+
         projectionResultEl.innerHTML = `
-            <div class="stamp ${projectedBalance >= 0 ? 'income' : 'expense'}">
-                R$ ${projectedBalance.toFixed(2)}
+            <div class="text-center">
+                <div class="text-xs mb-1">Saldo no período:</div>
+                <div class="stamp ${projectedBalance >= 0 ? 'income' : 'expense'}">
+                    R$ ${projectedBalance.toFixed(2)}
+                </div>
+                <div class="text-xs mt-2">
+                    Variação: <span class="${periodChange >= 0 ? 'text-olive' : 'text-rust'} font-bold">
+                        ${periodChange >= 0 ? '+' : ''}R$ ${periodChange.toFixed(2)}
+                    </span>
+                </div>
             </div>`;
     }
 
     // Event listeners para projeção
-    if (projectionDateInput) {
-        projectionDateInput.addEventListener('change', () => {
+    if (projectionStartDateInput) {
+        projectionStartDateInput.addEventListener('change', () => {
             updateProjection();
-            // Mostrar botão de gráfico quando há uma data selecionada
             const showChartBtn = document.getElementById('show-chart-btn');
-            if (showChartBtn && projectionDateInput.value) {
+            if (showChartBtn && projectionStartDateInput.value && projectionEndDateInput.value) {
+                showChartBtn.classList.remove('hidden');
+            }
+        });
+    }
+
+    if (projectionEndDateInput) {
+        projectionEndDateInput.addEventListener('change', () => {
+            updateProjection();
+            const showChartBtn = document.getElementById('show-chart-btn');
+            if (showChartBtn && projectionStartDateInput.value && projectionEndDateInput.value) {
                 showChartBtn.classList.remove('hidden');
             }
         });
@@ -498,13 +559,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderBalanceChart() {
-        if (!projectionDateInput.value || !balanceChartCanvas) return;
+        if (!projectionStartDateInput.value || !projectionEndDateInput.value || !balanceChartCanvas) return;
 
-        const futureDate = new Date(projectionDateInput.value + 'T03:00:00Z');
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
+        const startDate = new Date(projectionStartDateInput.value + 'T00:00:00');
+        const endDate = new Date(projectionEndDateInput.value + 'T23:59:59');
 
-        // Criar array de datas do hoje até a data futura
+        // Criar array de datas do início ao fim
         const dates = [];
         const balances = [];
 
@@ -513,37 +573,35 @@ document.addEventListener('DOMContentLoaded', () => {
             return new Date(a.date) - new Date(b.date);
         });
 
-        // Calcular saldo acumulado para cada data
-        let currentDate = new Date(today);
+        // Calcular saldo inicial (antes da data de início)
         let runningBalance = 0;
-
-        // Primeiro, calcular saldo inicial (até hoje)
         sortedTx.forEach(tx => {
-            const txDate = new Date(tx.date + 'T03:00:00Z');
-            if (txDate <= today) {
+            const txDate = new Date(tx.date + 'T00:00:00');
+            if (txDate < startDate) {
                 const amount = parseFloat(tx.amount);
                 runningBalance += tx.type === 'income' ? amount : -amount;
             }
         });
 
-        // Adicionar ponto inicial (hoje)
-        dates.push(today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+        // Adicionar ponto inicial
+        let currentDate = new Date(startDate);
+        dates.push(currentDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'numeric' }));
         balances.push(runningBalance);
 
         // Calcular projeção dia a dia
         currentDate.setDate(currentDate.getDate() + 1);
 
-        while (currentDate <= futureDate) {
+        while (currentDate <= endDate) {
             // Verificar se há transações neste dia
             sortedTx.forEach(tx => {
-                const txDate = new Date(tx.date + 'T03:00:00Z');
+                const txDate = new Date(tx.date + 'T00:00:00');
                 if (txDate.toDateString() === currentDate.toDateString()) {
                     const amount = parseFloat(tx.amount);
                     runningBalance += tx.type === 'income' ? amount : -amount;
                 }
             });
 
-            dates.push(currentDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            dates.push(currentDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'numeric' }));
             balances.push(runningBalance);
 
             currentDate.setDate(currentDate.getDate() + 1);
