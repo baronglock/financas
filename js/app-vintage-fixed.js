@@ -1073,10 +1073,76 @@ Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
         }
     }
 
-    // Estatísticas por Categoria
+    // Estatísticas por Categoria - Nova implementação melhorada
     const statsMonthInput = document.getElementById('stats-month');
     const statsCategorySelect = document.getElementById('stats-category');
     const statsResultDiv = document.getElementById('stats-result');
+
+    // Tabs de estatísticas
+    const statsOverviewTab = document.getElementById('stats-overview-tab');
+    const statsRankingTab = document.getElementById('stats-ranking-tab');
+    const statsChartTab = document.getElementById('stats-chart-tab');
+
+    // Painéis
+    const statsOverviewPanel = document.getElementById('stats-overview');
+    const statsRankingPanel = document.getElementById('stats-ranking');
+    const statsChartPanel = document.getElementById('stats-chart');
+
+    let categoryChart = null; // Para o gráfico de categorias
+
+    // Configurar tabs de estatísticas
+    function setupStatsTabs() {
+        if (statsOverviewTab) {
+            statsOverviewTab.addEventListener('click', () => {
+                showStatsPanel('overview');
+            });
+        }
+
+        if (statsRankingTab) {
+            statsRankingTab.addEventListener('click', () => {
+                showStatsPanel('ranking');
+            });
+        }
+
+        if (statsChartTab) {
+            statsChartTab.addEventListener('click', () => {
+                showStatsPanel('chart');
+            });
+        }
+    }
+
+    function showStatsPanel(panel) {
+        // Atualizar tabs
+        document.querySelectorAll('#stats-overview-tab, #stats-ranking-tab, #stats-chart-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Esconder todos os painéis
+        document.querySelectorAll('.stats-panel').forEach(p => {
+            p.classList.add('hidden');
+        });
+
+        // Mostrar painel selecionado
+        switch(panel) {
+            case 'overview':
+                statsOverviewTab.classList.add('active');
+                statsOverviewPanel.classList.remove('hidden');
+                break;
+            case 'ranking':
+                statsRankingTab.classList.add('active');
+                statsRankingPanel.classList.remove('hidden');
+                break;
+            case 'chart':
+                statsChartTab.classList.add('active');
+                statsChartPanel.classList.remove('hidden');
+                if (statsMonthInput.value) {
+                    renderCategoryChart();
+                }
+                break;
+        }
+    }
+
+    setupStatsTabs();
 
     function updateStatsCategoryFilter() {
         if (!statsCategorySelect) return;
@@ -1085,7 +1151,7 @@ Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
         const categories = [...new Set(transactions.map(tx => tx.description))].sort();
 
         // Limpar e repopular o select
-        statsCategorySelect.innerHTML = '<option value="">Todos os itens</option>';
+        statsCategorySelect.innerHTML = '<option value="">Todas as categorias</option>';
         categories.forEach(cat => {
             const option = document.createElement('option');
             option.value = cat;
@@ -1095,13 +1161,12 @@ Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
     }
 
     function calculateStats() {
-        if (!statsResultDiv) return;
-
         const selectedMonth = statsMonthInput.value; // formato: YYYY-MM
         const selectedCategory = statsCategorySelect.value;
 
         if (!selectedMonth) {
-            statsResultDiv.innerHTML = '<p class="text-center italic text-sm">Selecione um período para ver as estatísticas</p>';
+            statsOverviewPanel.innerHTML = '<p class="text-center italic text-sm">Selecione um período para ver as estatísticas</p>';
+            statsRankingPanel.innerHTML = '';
             return;
         }
 
@@ -1118,7 +1183,8 @@ Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
         }
 
         if (filteredTransactions.length === 0) {
-            statsResultDiv.innerHTML = '<p class="text-center italic text-sm">Nenhuma transação encontrada para este período</p>';
+            statsOverviewPanel.innerHTML = '<p class="text-center italic text-sm">Nenhuma transação encontrada para este período</p>';
+            statsRankingPanel.innerHTML = '';
             return;
         }
 
@@ -1129,7 +1195,8 @@ Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
                 grouped[tx.description] = {
                     income: 0,
                     expense: 0,
-                    count: 0
+                    count: 0,
+                    dates: []
                 };
             }
             if (tx.type === 'income') {
@@ -1138,73 +1205,279 @@ Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
                 grouped[tx.description].expense += parseFloat(tx.amount);
             }
             grouped[tx.description].count++;
+            grouped[tx.description].dates.push(tx.date);
         });
 
-        // Renderizar estatísticas
-        statsResultDiv.innerHTML = '';
-
-        // Criar tabela de estatísticas
-        const categories = Object.keys(grouped).sort();
-
-        categories.forEach(category => {
-            const data = grouped[category];
-            const total = data.income - data.expense;
-            const isPositive = total >= 0;
-
-            const categoryCard = document.createElement('div');
-            categoryCard.className = 'vintage-card p-4 border-l-4 ' + (isPositive ? 'border-olive' : 'border-rust');
-            categoryCard.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-bold text-lg">${category}</h3>
-                    <span class="text-sm font-mono">${data.count}x</span>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                    ${data.income > 0 ? `<div><span class="text-olive">+R$ ${data.income.toFixed(2)}</span></div>` : '<div></div>'}
-                    ${data.expense > 0 ? `<div><span class="text-rust">-R$ ${data.expense.toFixed(2)}</span></div>` : '<div></div>'}
-                </div>
-                <div class="mt-2 pt-2 border-t border-coffee border-dashed">
-                    <span class="font-bold ${isPositive ? 'text-olive' : 'text-rust'}">
-                        Total: ${isPositive ? '+' : ''}R$ ${total.toFixed(2)}
-                    </span>
-                </div>
-            `;
-            statsResultDiv.appendChild(categoryCard);
-        });
-
-        // Adicionar resumo geral
+        // Calcular totais
         const totalIncome = Object.values(grouped).reduce((sum, data) => sum + data.income, 0);
         const totalExpense = Object.values(grouped).reduce((sum, data) => sum + data.expense, 0);
-        const totalCount = Object.values(grouped).reduce((sum, data) => sum + data.count, 0);
         const balance = totalIncome - totalExpense;
 
-        const summaryCard = document.createElement('div');
-        summaryCard.className = 'vintage-card p-4 bg-coffee text-cream mt-4';
-        summaryCard.innerHTML = `
-            <h3 class="font-bold text-center mb-3">RESUMO DO PERÍODO</h3>
-            <div class="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                    <div class="text-xs opacity-75">Total de Lançamentos</div>
-                    <div class="font-bold text-lg">${totalCount}</div>
+        // Renderizar Visão Geral
+        renderOverview(grouped, totalIncome, totalExpense, balance, selectedCategory);
+
+        // Renderizar Rankings
+        renderRankings(grouped, totalExpense);
+
+        // Se a aba de gráfico estiver ativa, renderizar
+        if (!statsChartPanel.classList.contains('hidden')) {
+            renderCategoryChart();
+        }
+    }
+
+    function renderOverview(grouped, totalIncome, totalExpense, balance, selectedCategory) {
+        statsOverviewPanel.innerHTML = '';
+
+        // Cards de resumo
+        const summaryHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="stat-card">
+                    <div class="text-xs opacity-75 mb-1">Total Entradas</div>
+                    <div class="text-lg font-bold text-green-700">+R$ ${totalIncome.toFixed(2)}</div>
                 </div>
-                <div>
-                    <div class="text-xs opacity-75">Categorias</div>
-                    <div class="font-bold text-lg">${categories.length}</div>
+                <div class="stat-card">
+                    <div class="text-xs opacity-75 mb-1">Total Saídas</div>
+                    <div class="text-lg font-bold text-red-700">-R$ ${totalExpense.toFixed(2)}</div>
                 </div>
-                <div>
-                    <div class="text-xs opacity-75">Entradas</div>
-                    <div class="font-bold">+R$ ${totalIncome.toFixed(2)}</div>
+                <div class="stat-card">
+                    <div class="text-xs opacity-75 mb-1">Saldo Período</div>
+                    <div class="text-lg font-bold ${balance >= 0 ? 'text-green-700' : 'text-red-700'}">
+                        ${balance >= 0 ? '+' : ''}R$ ${balance.toFixed(2)}
+                    </div>
                 </div>
-                <div>
-                    <div class="text-xs opacity-75">Saídas</div>
-                    <div class="font-bold">-R$ ${totalExpense.toFixed(2)}</div>
+                <div class="stat-card">
+                    <div class="text-xs opacity-75 mb-1">Transações</div>
+                    <div class="text-lg font-bold">${Object.values(grouped).reduce((sum, d) => sum + d.count, 0)}</div>
                 </div>
-            </div>
-            <div class="mt-3 pt-3 border-t border-cream border-dashed text-center">
-                <div class="text-xs opacity-75">Saldo do Período</div>
-                <div class="font-bold text-xl">${balance >= 0 ? '+' : ''}R$ ${balance.toFixed(2)}</div>
             </div>
         `;
-        statsResultDiv.appendChild(summaryCard);
+
+        statsOverviewPanel.innerHTML = summaryHTML;
+
+        // Categorias com barras de progresso
+        const categories = Object.entries(grouped)
+            .map(([name, data]) => ({
+                name,
+                ...data,
+                total: data.expense || data.income,
+                net: data.income - data.expense
+            }))
+            .sort((a, b) => b.total - a.total);
+
+        const maxValue = Math.max(...categories.map(c => c.total));
+
+        const categoriesContainer = document.createElement('div');
+        categoriesContainer.className = 'space-y-4';
+
+        categories.forEach(cat => {
+            const percentage = (cat.total / maxValue) * 100;
+            const isExpense = cat.expense > cat.income;
+
+            const categoryHTML = `
+                <div class="vintage-card p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold">${cat.name}</h3>
+                            <div class="text-xs text-gray-600">${cat.count} transação(ões)</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold ${isExpense ? 'text-red-700' : 'text-green-700'}">
+                                R$ ${cat.total.toFixed(2)}
+                            </div>
+                            <span class="percentage-badge">${((cat.total / (isExpense ? totalExpense : totalIncome)) * 100).toFixed(1)}%</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${isExpense ? 'expense' : ''}" style="width: ${percentage}%"></div>
+                    </div>
+                    ${cat.income > 0 && cat.expense > 0 ? `
+                        <div class="grid grid-cols-2 gap-2 mt-2 text-xs">
+                            <div>Entradas: <span class="text-green-700">+R$ ${cat.income.toFixed(2)}</span></div>
+                            <div>Saídas: <span class="text-red-700">-R$ ${cat.expense.toFixed(2)}</span></div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            const div = document.createElement('div');
+            div.innerHTML = categoryHTML;
+            categoriesContainer.appendChild(div.firstElementChild);
+        });
+
+        statsOverviewPanel.appendChild(categoriesContainer);
+    }
+
+    function renderRankings(grouped, totalExpense) {
+        statsRankingPanel.innerHTML = '';
+
+        // Top gastos
+        const expenses = Object.entries(grouped)
+            .filter(([_, data]) => data.expense > 0)
+            .map(([name, data]) => ({ name, amount: data.expense, count: data.count }))
+            .sort((a, b) => b.amount - a.amount);
+
+        // Top entradas
+        const incomes = Object.entries(grouped)
+            .filter(([_, data]) => data.income > 0)
+            .map(([name, data]) => ({ name, amount: data.income, count: data.count }))
+            .sort((a, b) => b.amount - a.amount);
+
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
+
+        // Ranking de Gastos
+        html += '<div><h3 class="font-bold text-lg mb-4 text-red-700">🏆 Top Gastos</h3>';
+        expenses.slice(0, 5).forEach((item, index) => {
+            const medalClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+            html += `
+                <div class="ranking-item">
+                    <div class="ranking-medal ${medalClass}">${index + 1}º</div>
+                    <div class="flex-grow">
+                        <div class="font-bold">${item.name}</div>
+                        <div class="text-xs text-gray-600">${item.count} vez(es)</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-red-700">R$ ${item.amount.toFixed(2)}</div>
+                        <div class="text-xs">${((item.amount / totalExpense) * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        // Ranking de Entradas
+        html += '<div><h3 class="font-bold text-lg mb-4 text-green-700">💰 Top Entradas</h3>';
+        incomes.slice(0, 5).forEach((item, index) => {
+            const medalClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+            html += `
+                <div class="ranking-item">
+                    <div class="ranking-medal ${medalClass}">${index + 1}º</div>
+                    <div class="flex-grow">
+                        <div class="font-bold">${item.name}</div>
+                        <div class="text-xs text-gray-600">${item.count} vez(es)</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-green-700">R$ ${item.amount.toFixed(2)}</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div></div>';
+
+        statsRankingPanel.innerHTML = html;
+    }
+
+    function renderCategoryChart() {
+        const canvas = document.getElementById('category-chart');
+        if (!canvas || !statsMonthInput.value) return;
+
+        // Filtrar transações
+        const [year, month] = statsMonthInput.value.split('-').map(Number);
+        let filteredTransactions = transactions.filter(tx => {
+            const txDate = new Date(tx.date + 'T03:00:00Z');
+            return txDate.getUTCFullYear() === year && txDate.getUTCMonth() === (month - 1);
+        });
+
+        if (statsCategorySelect.value) {
+            filteredTransactions = filteredTransactions.filter(tx => tx.description === statsCategorySelect.value);
+        }
+
+        // Agrupar dados
+        const grouped = {};
+        filteredTransactions.forEach(tx => {
+            if (!grouped[tx.description]) {
+                grouped[tx.description] = { income: 0, expense: 0 };
+            }
+            if (tx.type === 'income') {
+                grouped[tx.description].income += parseFloat(tx.amount);
+            } else {
+                grouped[tx.description].expense += parseFloat(tx.amount);
+            }
+        });
+
+        // Preparar dados para o gráfico
+        const labels = Object.keys(grouped);
+        const expenseData = labels.map(l => grouped[l].expense);
+        const incomeData = labels.map(l => grouped[l].income);
+
+        // Destruir gráfico anterior
+        if (categoryChart) {
+            categoryChart.destroy();
+        }
+
+        // Criar novo gráfico
+        const ctx = canvas.getContext('2d');
+        categoryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Saídas',
+                        data: expenseData,
+                        backgroundColor: 'rgba(205, 92, 92, 0.7)',
+                        borderColor: '#CD5C5C',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Entradas',
+                        data: incomeData,
+                        backgroundColor: 'rgba(85, 107, 47, 0.7)',
+                        borderColor: '#556B2F',
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: "'Courier Prime', monospace"
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': R$ ' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toFixed(0);
+                            },
+                            font: {
+                                family: "'Courier Prime', monospace"
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(139, 69, 19, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                family: "'Courier Prime', monospace",
+                                size: 10
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
     }
 
     // Event listeners para estatísticas

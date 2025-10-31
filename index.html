@@ -288,12 +288,12 @@
 
                         <!-- Estatísticas por Categoria -->
                         <div class="vintage-card p-6">
-                            <h2 class="text-xl font-bold mb-4">Estatísticas por Categoria</h2>
+                            <h2 class="text-xl font-bold mb-4">Análise Detalhada</h2>
 
                             <!-- Filtros -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                 <div>
-                                    <label class="block text-sm font-bold mb-1">Filtrar por Mês/Ano</label>
+                                    <label class="block text-sm font-bold mb-1">Período de Análise</label>
                                     <input
                                         type="month"
                                         id="stats-month"
@@ -301,16 +301,35 @@
                                     >
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-bold mb-1">Filtrar por Item</label>
+                                    <label class="block text-sm font-bold mb-1">Filtrar Categoria</label>
                                     <select id="stats-category" class="vintage-select w-full">
-                                        <option value="">Todos os itens</option>
+                                        <option value="">Todas as categorias</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <!-- Resultado das Estatísticas -->
-                            <div id="stats-result" class="space-y-3">
-                                <p class="text-center italic text-sm">Selecione um período para ver as estatísticas</p>
+                            <!-- Tabs de visualização -->
+                            <div class="flex gap-2 mb-4">
+                                <button id="stats-overview-tab" class="vintage-tab active text-sm">
+                                    Visão Geral
+                                </button>
+                                <button id="stats-ranking-tab" class="vintage-tab text-sm">
+                                    Rankings
+                                </button>
+                                <button id="stats-chart-tab" class="vintage-tab text-sm">
+                                    Gráficos
+                                </button>
+                            </div>
+
+                            <!-- Container dos resultados -->
+                            <div id="stats-result" class="min-h-[300px]">
+                                <div id="stats-overview" class="stats-panel">
+                                    <p class="text-center italic text-sm">Selecione um período para ver as estatísticas</p>
+                                </div>
+                                <div id="stats-ranking" class="stats-panel hidden"></div>
+                                <div id="stats-chart" class="stats-panel hidden">
+                                    <canvas id="category-chart" style="max-height: 400px;"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
