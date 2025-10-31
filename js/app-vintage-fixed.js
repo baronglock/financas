@@ -21,6 +21,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 import { firebaseConfig, geminiApiKey } from './firebase-config.js';
+import { FutureTransactionsManager } from './future-transactions.js';
 
 // Initialize Firebase
 console.log('Inicializando Firebase...');
@@ -37,6 +38,7 @@ let transactions = [];
 let chatHistory = [];
 let transactionsCollectionRef;
 let chatHistoryCollectionRef;
+let futureTransactionsManager = null;
 
 // Aguardar DOM carregar completamente
 document.addEventListener('DOMContentLoaded', () => {
@@ -250,6 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
             transactionsCollectionRef = collection(db, `users/${userId}/transactions`);
             chatHistoryCollectionRef = collection(db, `users/${userId}/gemini_chat_history`);
 
+            // Inicializar gerenciador de transações futuras
+            if (futureTransactionsManager) {
+                futureTransactionsManager.cleanup();
+            }
+            futureTransactionsManager = new FutureTransactionsManager(db, userId);
+
             // Configurar listeners do Firestore
             setupFirestoreListeners();
 
@@ -259,6 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // Usuário não está logado
             console.log('Usuário deslogado, mostrando tela de login');
+
+            // Limpar gerenciador de transações futuras
+            if (futureTransactionsManager) {
+                futureTransactionsManager.cleanup();
+                futureTransactionsManager = null;
+            }
 
             userId = null;
             userEmail = null;

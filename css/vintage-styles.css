@@ -353,3 +353,81 @@ h1, h2, h3 {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--charcoal);
 }
+
+/* Estilos para Contas Futuras */
+.future-item {
+    background-color: var(--paper);
+    border: 1px dashed var(--coffee);
+    padding: 12px;
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+}
+
+.future-item:hover {
+    background-color: var(--cream);
+    transform: translateX(5px);
+}
+
+.future-item.overdue {
+    border-color: var(--rust);
+    background-color: rgba(205, 92, 92, 0.1);
+}
+
+.future-item.overdue .future-date {
+    color: var(--rust);
+    font-weight: bold;
+}
+
+.future-item.today {
+    border-color: var(--gold);
+    background-color: rgba(218, 165, 32, 0.1);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(218, 165, 32, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(218, 165, 32, 0);
+    }
+}
+
+.confirm-btn {
+    background-color: var(--olive);
+    color: var(--cream);
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid var(--olive);
+    cursor: pointer;
+}
+
+.confirm-btn:hover {
+    background-color: var(--cream);
+    color: var(--olive);
+}
+
+.delete-future-btn {
+    background-color: transparent;
+    color: var(--rust);
+    padding: 2px 6px;
+    font-size: 10px;
+    border: 1px solid var(--rust);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.delete-future-btn:hover {
+    background-color: var(--rust);
+    color: var(--cream);
+}
+
+.vintage-btn-small {
+    padding: 8px 16px;
+    font-size: 14px;
+}
