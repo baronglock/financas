@@ -155,6 +155,11 @@ export class FutureTransactionsManager {
             const itemDiv = this.createFutureItemElement(expense, 'expense', today);
             listEl.appendChild(itemDiv);
         });
+
+        // Atualizar projeção quando renderizar
+        if (window.updateProjection) {
+            window.updateProjection();
+        }
     }
 
     renderFutureIncomes() {
@@ -173,6 +178,11 @@ export class FutureTransactionsManager {
             const itemDiv = this.createFutureItemElement(income, 'income', today);
             listEl.appendChild(itemDiv);
         });
+
+        // Atualizar projeção quando renderizar
+        if (window.updateProjection) {
+            window.updateProjection();
+        }
     }
 
     createFutureItemElement(item, type, today) {

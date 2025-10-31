@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Calcular projeção até data final
+        // Calcular projeção até data final (transações confirmadas)
         let projectedBalance = initialBalance;
         transactions.forEach(tx => {
             const txDate = new Date(tx.date + 'T00:00:00');
@@ -516,11 +516,48 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Incluir contas e entradas futuras na projeção
+        if (futureTransactionsManager) {
+            // Adicionar contas futuras (despesas)
+            futureTransactionsManager.futureExpenses.forEach(expense => {
+                const expenseDate = new Date(expense.date + 'T00:00:00');
+                if (expenseDate >= startDate && expenseDate <= endDate) {
+                    projectedBalance -= parseFloat(expense.amount);
+                }
+            });
+
+            // Adicionar entradas futuras (receitas)
+            futureTransactionsManager.futureIncomes.forEach(income => {
+                const incomeDate = new Date(income.date + 'T00:00:00');
+                if (incomeDate >= startDate && incomeDate <= endDate) {
+                    projectedBalance += parseFloat(income.amount);
+                }
+            });
+        }
+
         const periodChange = projectedBalance - initialBalance;
+
+        // Contar contas futuras incluídas na projeção
+        let futureExpensesCount = 0;
+        let futureIncomesCount = 0;
+        if (futureTransactionsManager) {
+            futureTransactionsManager.futureExpenses.forEach(expense => {
+                const expenseDate = new Date(expense.date + 'T00:00:00');
+                if (expenseDate >= startDate && expenseDate <= endDate) {
+                    futureExpensesCount++;
+                }
+            });
+            futureTransactionsManager.futureIncomes.forEach(income => {
+                const incomeDate = new Date(income.date + 'T00:00:00');
+                if (incomeDate >= startDate && incomeDate <= endDate) {
+                    futureIncomesCount++;
+                }
+            });
+        }
 
         projectionResultEl.innerHTML = `
             <div class="text-center">
-                <div class="text-xs mb-1">Saldo no período:</div>
+                <div class="text-xs mb-1">Saldo projetado no período:</div>
                 <div class="stamp ${projectedBalance >= 0 ? 'income' : 'expense'}">
                     R$ ${projectedBalance.toFixed(2)}
                 </div>
@@ -529,6 +566,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${periodChange >= 0 ? '+' : ''}R$ ${periodChange.toFixed(2)}
                     </span>
                 </div>
+                ${(futureExpensesCount > 0 || futureIncomesCount > 0) ? `
+                    <div class="text-xs mt-2 italic" style="color: var(--coffee);">
+                        Incluindo:
+                        ${futureExpensesCount > 0 ? `${futureExpensesCount} conta(s) a pagar` : ''}
+                        ${futureExpensesCount > 0 && futureIncomesCount > 0 ? ' e ' : ''}
+                        ${futureIncomesCount > 0 ? `${futureIncomesCount} entrada(s) futura(s)` : ''}
+                    </div>
+                ` : ''}
             </div>`;
     }
 
@@ -606,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDate.setDate(currentDate.getDate() + 1);
 
         while (currentDate <= endDate) {
-            // Verificar se há transações neste dia
+            // Verificar se há transações confirmadas neste dia
             sortedTx.forEach(tx => {
                 const txDate = new Date(tx.date + 'T00:00:00');
                 if (txDate.toDateString() === currentDate.toDateString()) {
@@ -614,6 +659,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     runningBalance += tx.type === 'income' ? amount : -amount;
                 }
             });
+
+            // Verificar se há contas futuras neste dia
+            if (futureTransactionsManager) {
+                // Contas a pagar
+                futureTransactionsManager.futureExpenses.forEach(expense => {
+                    const expenseDate = new Date(expense.date + 'T00:00:00');
+                    if (expenseDate.toDateString() === currentDate.toDateString()) {
+                        runningBalance -= parseFloat(expense.amount);
+                    }
+                });
+
+                // Entradas futuras
+                futureTransactionsManager.futureIncomes.forEach(income => {
+                    const incomeDate = new Date(income.date + 'T00:00:00');
+                    if (incomeDate.toDateString() === currentDate.toDateString()) {
+                        runningBalance += parseFloat(income.amount);
+                    }
+                });
+            }
 
             dates.push(currentDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'numeric' }));
             balances.push(runningBalance);
@@ -1166,6 +1230,9 @@ Fluxo mensal: R$ ${(income - expenses).toFixed(2)}`;
         updateStatsCategoryFilter();
         calculateStats();
     };
+
+    // Expor updateProjection globalmente para ser chamada pelo módulo de contas futuras
+    window.updateProjection = updateProjection;
 
     // Verificar estado inicial
     console.log('App inicializado. Aguardando autenticação...');
