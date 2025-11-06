@@ -548,3 +548,11 @@ h1, h2, h3 {
     background-color: var(--cream);
     border: 1px solid var(--coffee);
 }
+
+/* Estilos para Projeção do Mês */
+.projection-compare {
+    background-color: var(--paper);
+    border: 1px solid var(--coffee);
+    border-radius: 4px;
+    padding: 12px;
+}

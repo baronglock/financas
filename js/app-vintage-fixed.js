@@ -482,6 +482,61 @@ document.addEventListener('DOMContentLoaded', () => {
         currentBalanceEl.textContent = `R$ ${balance.toFixed(2)}`;
         monthlyIncomeEl.textContent = `R$ ${monthlyIncome.toFixed(2)}`;
         monthlyExpensesEl.textContent = `R$ ${monthlyExpenses.toFixed(2)}`;
+
+        // Atualizar projeção do mês
+        updateMonthProjection(balance, monthlyIncome, monthlyExpenses, currentMonth, currentYear);
+    }
+
+    function updateMonthProjection(currentBalance, confirmedIncome, confirmedExpenses, month, year) {
+        // Elementos da projeção
+        const projIncomeConfirmedEl = document.getElementById('proj-income-confirmed');
+        const projIncomeProjectedEl = document.getElementById('proj-income-projected');
+        const projIncomeTotalEl = document.getElementById('proj-income-total');
+        const projExpenseConfirmedEl = document.getElementById('proj-expense-confirmed');
+        const projExpenseProjectedEl = document.getElementById('proj-expense-projected');
+        const projExpenseTotalEl = document.getElementById('proj-expense-total');
+        const projMonthBalanceEl = document.getElementById('proj-month-balance');
+
+        if (!projIncomeConfirmedEl) return;
+
+        // Calcular entradas e saídas futuras do mês
+        let futureIncomeMonth = 0;
+        let futureExpenseMonth = 0;
+
+        if (futureTransactionsManager) {
+            // Entradas futuras do mês
+            futureTransactionsManager.futureIncomes.forEach(income => {
+                const incomeDate = new Date(income.date + 'T00:00:00');
+                if (incomeDate.getMonth() === month && incomeDate.getFullYear() === year) {
+                    futureIncomeMonth += parseFloat(income.amount);
+                }
+            });
+
+            // Contas a pagar do mês
+            futureTransactionsManager.futureExpenses.forEach(expense => {
+                const expenseDate = new Date(expense.date + 'T00:00:00');
+                if (expenseDate.getMonth() === month && expenseDate.getFullYear() === year) {
+                    futureExpenseMonth += parseFloat(expense.amount);
+                }
+            });
+        }
+
+        // Totais projetados
+        const totalIncomeProjected = confirmedIncome + futureIncomeMonth;
+        const totalExpenseProjected = confirmedExpenses + futureExpenseMonth;
+        const projectedMonthBalance = currentBalance + totalIncomeProjected - totalExpenseProjected;
+
+        // Atualizar elementos
+        projIncomeConfirmedEl.textContent = `R$ ${confirmedIncome.toFixed(2)}`;
+        projIncomeProjectedEl.textContent = `R$ ${futureIncomeMonth.toFixed(2)}`;
+        projIncomeTotalEl.textContent = `R$ ${totalIncomeProjected.toFixed(2)}`;
+
+        projExpenseConfirmedEl.textContent = `R$ ${confirmedExpenses.toFixed(2)}`;
+        projExpenseProjectedEl.textContent = `R$ ${futureExpenseMonth.toFixed(2)}`;
+        projExpenseTotalEl.textContent = `R$ ${totalExpenseProjected.toFixed(2)}`;
+
+        projMonthBalanceEl.textContent = `R$ ${projectedMonthBalance.toFixed(2)}`;
+        projMonthBalanceEl.className = 'text-lg font-bold ' + (projectedMonthBalance >= 0 ? 'text-green-700' : 'text-red-700');
     }
 
     function updateProjection() {
